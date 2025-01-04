@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<idea-plugin>
+    <id>com.fina.wheelclass</id>
+    <name>WheelClass</name>
+    <vendor email="53124742@qq.com">Fina</vendor>
+    <description><![CDATA[
+        This is a plugin that tries to avoid creating similar entities repeatedly when creating entities.<br>
+        When a project is large, there are usually many entities, <br>
+        and even if they have already been classified, there may still be entities that are very similar created.<br>
+        This plugin can detect similar duplicate entities in the project.<br>
+</p>
+</p>
+        这是一个尽可能避免在创建实体的时候，重复造轮子的插件。<br>
+        当一个项目很大的时候，实体通常会比较多，既使已经分类了或许也会出现创建了非常类似的实体。<br>
+        这个插件可以检测项目里类似重复的实体。<br>
+</p>
+</p>
+        To speed up the program, only detect classes with @Data <br>
+</p>
+</p>
+        插件会尽可能的加快速度，只检测有@Data的类。<br>
+    ]]></description>
+    <version>1.0.0</version>
+
+    <idea-version since-build="231" until-build="243.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                      implementationClass="com.fina.wheelclass.provider.EntityLineMarkerProvider"/>
+    </extensions>
+
+    <actions>
+        <action id="WheelClass.EntitySearch"
+                class="com.fina.wheelclass.action.EntitySearchAction"
+                text="Search Similar Entities"
+                description="Search for similar entities"
+                icon="/icons/similar-class.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <keyboard-shortcut first-keystroke="control alt SEMICOLON" keymap="$default"/>
+        </action>
+    </actions>
+
+<!--    <extensions defaultExtensionNs="com.intellij">-->
+<!--        <header>-->
+<!--            <checkbox id="selectColumn" label="选择列"/>-->
+<!--            <checkbox id="selectColumnDiff" label="选择要比对差异的列"/>-->
+<!--        </header>-->
+<!--    </extensions>-->
+</idea-plugin>
