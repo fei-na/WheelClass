@@ -32,21 +32,4 @@
                                       implementationClass="com.fina.wheelclass.provider.EntityLineMarkerProvider"/>
     </extensions>
 
-    <actions>
-        <action id="WheelClass.EntitySearch"
-                class="com.fina.wheelclass.action.EntitySearchAction"
-                text="Search Similar Entities"
-                description="Search for similar entities"
-                icon="/icons/similar-class.svg">
-            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
-            <keyboard-shortcut first-keystroke="control alt SEMICOLON" keymap="$default"/>
-        </action>
-    </actions>
-
-<!--    <extensions defaultExtensionNs="com.intellij">-->
-<!--        <header>-->
-<!--            <checkbox id="selectColumn" label="选择列"/>-->
-<!--            <checkbox id="selectColumnDiff" label="选择要比对差异的列"/>-->
-<!--        </header>-->
-<!--    </extensions>-->
 </idea-plugin>

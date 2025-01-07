@@ -13,24 +13,21 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
 import javax.swing.event.ChangeEvent
-import javax.swing.table.AbstractTableModel
-import javax.swing.table.TableCellRenderer
 import javax.swing.event.ListSelectionEvent
 import javax.swing.event.TableColumnModelEvent
 import javax.swing.event.TableColumnModelListener
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.Component
-import javax.swing.table.DefaultTableModel
-import javax.swing.table.JTableHeader
 import javax.swing.JCheckBox
 import javax.swing.UIManager
-import javax.swing.table.TableModel
 import java.awt.FlowLayout
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.util.Timer
 import java.util.TimerTask
+import java.awt.Font
+import javax.swing.table.*
 
 class EntitySearchDialog(
     private val project: Project,
@@ -39,7 +36,7 @@ class EntitySearchDialog(
 ) : DialogWrapper(project, true) {
     private val splitter = JBSplitter(false, 0.3f)
     private val entityTableModel = EntityTableModel()
-    private val entitySearchService = EntitySearchService(project)
+    private val entitySearchService = EntitySearchService(project, sourceClass)
     private val diffComponent = JPanel(BorderLayout())
     private var searchJob: Timer? = null
     
@@ -49,6 +46,33 @@ class EntitySearchDialog(
         intercellSpacing = Dimension(1, 1)
         autoResizeMode = JBTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS
         rowHeight = 25
+        
+        // 添加自定义渲染器
+        setDefaultRenderer(Object::class.java, object : DefaultTableCellRenderer() {
+            override fun getTableCellRendererComponent(
+                table: JTable?,
+                value: Any?,
+                isSelected: Boolean,
+                hasFocus: Boolean,
+                row: Int,
+                column: Int
+            ): Component {
+                val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+                if (entityTableModel.isLoading()) {
+                    // 加载状态下的样式
+                    horizontalAlignment = SwingConstants.CENTER
+                    font = font.deriveFont(Font.BOLD)  // 加粗显示
+                } else {
+                    // 正常状态下的样式
+                    horizontalAlignment = when (column) {
+                        2 -> SwingConstants.CENTER  // 相似度居中
+                        else -> SwingConstants.LEFT  // 其他左对齐
+                    }
+                    font = font.deriveFont(Font.PLAIN)
+                }
+                return component
+            }
+        })
     }
     
     // 右下表格
@@ -117,17 +141,19 @@ class EntitySearchDialog(
     }
 
     private fun performSearch(fields: List<EntityField>, selectedColumns: List<Int>) {
-        // 取消之前的定时器
         searchJob?.cancel()
         searchJob = Timer()
         
-        // 创建新的定时器，延迟300毫秒执行查询
+        // 设置加载状态
+        entityTableModel.setLoading(true)
+        
         searchJob?.schedule(object : TimerTask() {
             override fun run() {
                 SwingUtilities.invokeLater {
                     if (selectedColumns.isNotEmpty() && fields.isNotEmpty()) {
+                        //println("执行搜索: 字段数=${fields.size}, 选中列=${selectedColumns}")
                         val similarClasses = entitySearchService.findSimilarEntities(
-                            fields,  // 使用当前字段列表而不是源类
+                            fields,
                             minSimilarity,
                             selectedColumns
                         )
@@ -280,24 +306,19 @@ private class SourceFieldsTableModel : AbstractTableModel() {
                 }
                 fields.add(newField)
                 fireTableRowsInserted(fields.size - 1, fields.size - 1)
-                // 确保在添加后更新数据
-                SwingUtilities.invokeLater {
-                    updateCallback?.invoke()
-                }
+                updateCallback?.invoke()
             }
         } else {
             val field = fields[row]
-            fields[row] = when (col) {
+            val updatedField = when (col) {
                 0 -> field.copy(name = strValue)
                 1 -> field.copy(type = strValue)
                 2 -> field.copy(comment = strValue)
                 else -> return
             }
+            fields[row] = updatedField
             fireTableCellUpdated(row, col)
-            // 确保在修改后更新数据
-            SwingUtilities.invokeLater {
-                updateCallback?.invoke()
-            }
+            updateCallback?.invoke()
         }
     }
 
@@ -359,10 +380,24 @@ private class SourceFieldsTableModel : AbstractTableModel() {
 private class EntityTableModel : AbstractTableModel() {
     private val columnNames = arrayOf("类名", "包名", "相似度")
     private var data = mutableListOf<EntityInfo>()
+    private var isLoading = true
 
-    override fun getRowCount() = data.size
+    override fun getRowCount() = if (isLoading || data.isEmpty()) 1 else data.size
     override fun getColumnCount() = columnNames.size
+
     override fun getValueAt(row: Int, col: Int): Any? {
+        if (isLoading) {
+            // 只在中间列显示"查询中..."
+            return when (col) {
+                1 -> "查询中..."
+                else -> ""
+            }
+        }
+        
+        if (data.isEmpty()) {
+            return ""
+        }
+
         val entity = data[row]
         return when (col) {
             0 -> entity.className
@@ -374,13 +409,28 @@ private class EntityTableModel : AbstractTableModel() {
 
     override fun getColumnName(column: Int) = columnNames[column]
 
+    // 自定义单元格渲染器，用于居中显示
+    fun getLoadingRenderer(): TableCellRenderer {
+        return DefaultTableCellRenderer().apply {
+            horizontalAlignment = SwingConstants.CENTER
+        }
+    }
+
+    fun setLoading(loading: Boolean) {
+        isLoading = loading
+        fireTableDataChanged()
+    }
+
     fun updateData(newData: List<EntityInfo>) {
+        isLoading = false
         data.clear()
         data.addAll(newData)
         fireTableDataChanged()
     }
 
     fun getEntityAt(row: Int): EntityInfo = data[row]
+
+    fun isLoading() = isLoading
 }
 
 // 自定义表头渲染器，支持复选框
