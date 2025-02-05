@@ -6,28 +6,27 @@ import com.fina.wheelclass.service.EntitySearchService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiManager
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
-import javax.swing.event.ChangeEvent
-import javax.swing.event.ListSelectionEvent
-import javax.swing.event.TableColumnModelEvent
-import javax.swing.event.TableColumnModelListener
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.Component
 import javax.swing.JCheckBox
 import javax.swing.UIManager
 import java.awt.FlowLayout
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
 import java.util.Timer
 import java.util.TimerTask
 import java.awt.Font
 import javax.swing.table.*
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.psi.JavaPsiFacade
+import com.intellij.openapi.editor.ScrollType
 
 class EntitySearchDialog(
     private val project: Project,
@@ -98,6 +97,19 @@ class EntitySearchDialog(
     init {
         super.init()
         title = "比 较 类"
+        
+        // 添加双击事件监听器
+        entityTable.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 2) {  // 双击事件
+                    val row = entityTable.selectedRow
+                    if (row != -1) {
+                        val entity = entityTableModel.getEntityAt(row)
+                        openEntityFile(entity)
+                    }
+                }
+            }
+        })
         
         // 设置表格引用并初始化选中列
         (sourceFieldsTable.model as SourceFieldsTableModel).apply {
@@ -259,6 +271,38 @@ class EntitySearchDialog(
 
     override fun createSouthPanel(): JComponent? {
         return null  // 返回 null 来移除底部按钮面板
+    }
+
+    // 添加打开文件的方法
+    private fun openEntityFile(entity: EntityInfo) {
+        val project = this.project
+        val psiManager = PsiManager.getInstance(project)
+        val scope = GlobalSearchScope.projectScope(project)
+        
+        // 通过完整类名查找对应的类文件
+        val qualifiedName = "${entity.packageName}.${entity.className}"
+        val psiClass = JavaPsiFacade.getInstance(project)
+            .findClass(qualifiedName, scope)
+        
+        if (psiClass != null) {
+            // 获取对应的虚拟文件
+            val virtualFile = psiClass.containingFile?.virtualFile
+            if (virtualFile != null) {
+                // 打开文件并定位到类定义处
+                FileEditorManager.getInstance(project).openFile(virtualFile, true)
+                
+                // 获取编辑器并移动光标到类定义处
+                val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                if (editor != null) {
+                    val offset = psiClass.textOffset
+                    editor.caretModel.moveToOffset(offset)
+                    editor.selectionModel.removeSelection()
+                    
+                    // 确保光标可见
+                    editor.scrollingModel.scrollToCaret(ScrollType.CENTER)
+                }
+            }
+        }
     }
 }
 

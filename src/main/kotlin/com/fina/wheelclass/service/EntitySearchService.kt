@@ -223,13 +223,32 @@ class EntitySearchService(
     }
 
     public fun getEntityFields(psiClass: PsiClass): List<EntityField> {
-        return psiClass.fields.map { field ->
+        val allFields = mutableListOf<EntityField>()
+        
+        // 获取当前类的字段
+        allFields.addAll(psiClass.fields.map { field ->
             EntityField(
                 name = field.name,
                 type = field.type.presentableText,
                 comment = field.docComment?.text ?: "",
                 annotations = field.annotations.mapNotNull { it.qualifiedName }
             )
+        })
+        
+        // 递归获取所有父类的字段
+        var currentClass = psiClass.superClass
+        while (currentClass != null && !currentClass.qualifiedName.equals("java.lang.Object")) {
+            allFields.addAll(currentClass.fields.map { field ->
+                EntityField(
+                    name = field.name,
+                    type = field.type.presentableText,
+                    comment = field.docComment?.text ?: "",
+                    annotations = field.annotations.mapNotNull { it.qualifiedName }
+                )
+            })
+            currentClass = currentClass.superClass
         }
+        
+        return allFields
     }
 }

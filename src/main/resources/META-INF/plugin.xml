@@ -9,23 +9,51 @@
         and even if they have already been classified, there may still be entities that are very similar created.<br>
         This plugin can detect similar duplicate entities in the project.<br>
 </p>
-</p>
         这是一个尽可能避免在创建实体的时候，重复造轮子的插件。<br>
         当一个项目很大的时候，实体通常会比较多，既使已经分类了或许也会出现创建了非常类似的实体。<br>
         这个插件可以检测项目里类似重复的实体。<br>
 </p>
-</p>
         To speed up the program, only detect classes with @Data <br>
-</p>
 </p>
         插件会尽可能的加快速度，只检测有@Data的类。<br>
     ]]></description>
-    <version>1.0.0</version>
+    
+    <change-notes><![CDATA[
+        <h3>1.0.1</h3>
+        <ul>
+            <li>新增功能：支持获取父类字段进行相似度比较</li>
+            <li>新增功能：双击搜索结果可以直接跳转到对应类文件</li>
+        </ul>
+        <br>
+        <h3>1.0.0</h3>
+        <ul>
+            <li>首次发布</li>
+            <li>支持检测项目中带有@Data注解的类</li>
+            <li>支持按字段名、类型、注释进行相似度比较</li>
+        </ul>
+        
+        <br>
+        <h3>1.0.1 (English)</h3>
+        <ul>
+            <li>New: Include parent class fields in similarity comparison</li>
+            <li>New: Double-click search results to navigate to the corresponding class file</li>
+        </ul>
+        <br>
+        <h3>1.0.0 (English)</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>Support detecting classes with @Data annotation in the project</li>
+            <li>Support similarity comparison by field name, type, and comments</li>
+        </ul>
+    ]]></change-notes>
+    
+    <version>1.0.1</version>
 
     <idea-version since-build="231" until-build="243.*"/>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.lang</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.lineMarkerProvider language="JAVA"
